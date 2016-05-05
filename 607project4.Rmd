@@ -1,0 +1,114 @@
+---
+title: "Data 607 Project 4: NoSQL"
+author: "Armenoush Aslanian-Persico"
+output: 
+  html_document:
+    theme: cerulean
+---
+
+# Credits
+> Thanks to guidance from Valerie Briot, Christophe Hunt, Antonio Bayquen, Dan Brooks,  R-bloggers (http://www.r-bloggers.com/mysql-and-r/), and Andy Catlin's MongoDB instructional video.
+
+# Intro
+
+The magic of communicating software! In this fascinating assignment we pull data from an existing SQL database, import into R, and recreate in a NoSQL database, Mongo DB.
+
+# What is Mongo DB?
+
+From the MongoDB website:
+
+> "MongoDB is an open-source document database that provides high performance, high availability, and automatic scaling. MongoDB obviates the need for an Object Relational Mapping (ORM) to facilitate development."
+
+> "MongoDB stores data in the form of documents, which are JSON-like field and value pairs. Documents are analogous to structures in programming languages that associate keys with values (e.g. dictionaries, hashes, maps, and associative arrays). Formally, MongoDB documents are BSON documents. BSON is a binary representation of JSON with additional type information. In the documents, the value of a field can be any of the BSON data types, including other documents, arrays, and arrays of documents." 
+
+# Let's Begin!
+
+## Here are the packages which give us warning messages for any number of reasons.
+
+```{r}
+suppressMessages(suppressWarnings(library(RMySQL)))
+suppressMessages(suppressWarnings(library(rmongodb)))
+suppressMessages(suppressWarnings(library(RJSONIO)))
+suppressMessages(suppressWarnings(library(rjson)))
+suppressMessages(suppressWarnings(library(RCurl)))
+suppressMessages(suppressWarnings(library(plyr)))
+suppressMessages(suppressWarnings(library(knitr)))
+suppressMessages(suppressWarnings(library(mongolite)))
+```
+
+## Now we connect to our MySQL server, which must already be running on the machine before attempting this step.
+
+```{r}
+driver <- dbDriver("MySQL")
+sqlconnect <- dbConnect(driver, user="root", password = "mysql11", dbname = "flights", host = "localhost")
+```
+
+## Let's check out what tables exist in our SQL database. Does this look familiar from last year? It should! Good memories.
+
+```{r}
+dbListTables(sqlconnect)
+```
+
+## Now we can run some "queries" where we select everything to see if it looks good, and check the number of rows.
+
+```{r}
+query <- "select * from flights;"
+flights <- dbGetQuery(sqlconnect, query)
+nrow(flights)
+kable(head(flights))
+
+
+query <- "select * from airlines;"
+airlines <- dbGetQuery(sqlconnect, query)
+nrow(airlines)
+kable(head(airlines))
+
+
+query <- "select * from weather;"
+weather <- dbGetQuery(sqlconnect, query)
+nrow(weather)
+kable(head(weather))
+
+
+query <- "select * from planes;"
+planes <- dbGetQuery(sqlconnect, query)
+nrow(planes)
+kable(head(planes))
+
+
+query <- "select * from airports;"
+airports <- dbGetQuery(sqlconnect, query)
+nrow(airports)
+kable(head(airports))
+
+```
+
+## Looks good. Now we disconnect from the server.
+
+```{r}
+dbDisconnect(sqlconnect) 
+dbUnloadDriver(driver)
+```
+
+# Mongo time!
+
+## First we make sure the Mongo service is running before starting this step. 
+
+## Then we create a collection named flights and insert our previously created flights dataset. The mongolite package works well here. Hold tight because this can take a couple minutes.
+
+```{r, eval=FALSE}
+m <- mongo(collection = "flights")
+if (m$count()>0)(m$drop())
+m$insert(flights)
+nrow(flights)
+
+```
+
+## Finally, we check the row count. It looks like this matches the row count from our SQL import. 
+
+# Reflections
+## What are the advantages and  disadvantages of storing the data in a relational database vs. your NoSQL database?
+
+> While I did not try Neo4j for this project, MongoDB was difficult to learn with the command prompt interface. It was not very user friendly. I made some syntax errors because I was not experienced in command prompt. It also seemed that I had to run the R code during the connection attempt for the connection to succeed. The command prompt also does not seem to allow copying and pasting. Therefore, the interface and learning curve here are disadvantages. 
+
+> From a structural standpoint, the queries run through MongoDB seem to take longer than SQL and are also less intuitive. The advantage would be that SQL would not be needed to run database queries if everything can be done through R.
